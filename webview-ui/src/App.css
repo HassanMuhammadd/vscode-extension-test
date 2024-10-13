@@ -1,8 +1,26 @@
 main {
-  display: flex;
+  /* display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: center; */
   height: 100%;
+}
+
+.checkbox-container{
   width: 100%;
+}
+.nesting-0 {
+  margin-left: 0
+}
+.nesting-1 {
+  margin-left: 30px
+}
+.nesting-2 {
+  margin-left: 60px
+}
+.group{
+  margin-top: 10px;
+}
+.title{
+  margin: 20px 0 20px 0;
 }
