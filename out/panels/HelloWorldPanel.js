@@ -1,9 +1,20 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HelloWorldPanel = void 0;
 const vscode_1 = require("vscode");
 const getUri_1 = require("../utilities/getUri");
 const getNonce_1 = require("../utilities/getNonce");
+const fileUtils_1 = require("../utilities/fileUtils");
+const extension_1 = require("../extension");
 /**
  * This class manages the state and behavior of HelloWorld webview panels.
  *
@@ -56,6 +67,7 @@ class HelloWorldPanel {
             {
                 // Enable JavaScript in the webview
                 enableScripts: true,
+                retainContextWhenHidden: true,
                 // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
                 localResourceRoots: [vscode_1.Uri.joinPath(extensionUri, "out"), vscode_1.Uri.joinPath(extensionUri, "webview-ui/build")],
             });
@@ -112,6 +124,12 @@ class HelloWorldPanel {
       </html>
     `;
     }
+    _postToWebview(message) {
+        this._panel.webview.postMessage({
+            command: message.command,
+            files: message.files
+        });
+    }
     /**
      * Sets up an event listener to listen for messages passed from the webview context and
      * executes code based on the message that is recieved.
@@ -120,18 +138,22 @@ class HelloWorldPanel {
      * @param context A reference to the extension context
      */
     _setWebviewMessageListener(webview) {
-        webview.onDidReceiveMessage((message) => {
+        webview.onDidReceiveMessage((message) => __awaiter(this, void 0, void 0, function* () {
             const command = message.command;
             const text = message.text;
+            const files = message.files;
             switch (command) {
                 case "hello":
                     // Code that should run in response to the hello message command
                     vscode_1.window.showInformationMessage(text);
                     return;
+                case "fixFiles":
+                    yield (0, fileUtils_1.fixFiles)(files, extension_1.diagnosticCollection);
+                    return;
                 // Add more switch case statements here as more webview message commands
                 // are created within the webview context (i.e. inside media/main.js)
             }
-        }, undefined, this._disposables);
+        }), undefined, this._disposables);
     }
 }
 exports.HelloWorldPanel = HelloWorldPanel;

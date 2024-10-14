@@ -8,12 +8,10 @@
     },
     "main": "./out/extension.js",
     "contributes": {
-        "commands": [
-            {
-                "command": "hello-world.showHelloWorld",
-                "title": "Try Me"
-            }
-        ]
+        "commands": [{
+            "command": "hello-world.showHelloWorld",
+            "title": "Lint The Project and Show Errors"
+        }]
     },
     "scripts": {
         "install:all": "npm install && cd webview-ui && npm install",

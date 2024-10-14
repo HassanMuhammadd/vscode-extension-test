@@ -1,7 +1,12 @@
 import * as vscode from "vscode";
 import { HelloWorldPanel } from "./panels/HelloWorldPanel";
+import {processFile} from "./utilities/fileUtils";
+import {Error} from "./types/Error";
 
+export const diagnosticCollection = vscode.languages.createDiagnosticCollection("spacingIssues");
 export function activate(context: vscode.ExtensionContext) {
+
+
   // Create the show hello world command
   const showHelloWorldCommand = vscode.commands.registerCommand("hello-world.showHelloWorld", async() => {
 
@@ -11,6 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage('No active editor found.');
       return;
     }
+    HelloWorldPanel.render(context.extensionUri);
 
     const activeDocument = activeEditor.document;
     const folderUri = vscode.workspace.getWorkspaceFolder(activeDocument.uri)?.uri;
@@ -25,21 +31,18 @@ export function activate(context: vscode.ExtensionContext) {
         new vscode.RelativePattern(folderUri, '**/*'), // Match all files in the folder
       );
 
-    //found all files in the project
-    files.forEach(file => {
-        console.log(`File: ${file.fsPath}`);
-      });
+    const diagnostics: vscode.Diagnostic[] = [];
+    const brokenFiles: Error[] = [];
+    for (const file of files) {
+      const fileErrors: Error[] = await processFile(file, diagnostics, diagnosticCollection);
+      brokenFiles.push(...fileErrors);
+    }
 
+    HelloWorldPanel.currentPanel?._postToWebview({
+      command: 'brokenFiles',
+      files: brokenFiles
+    });
 
-    //const file = vscode.window.activeTextEditor?.document;
-    //if (file) {
-    //  for (let lineNumber = 0; lineNumber < file.lineCount; lineNumber++) {
-    //      const lineText = file.lineAt(lineNumber).text;
-    //      console.log(`Line ${lineNumber + 1}: ${lineText}`);
-    //  }
-    //}
-
-    HelloWorldPanel.render(context.extensionUri);
   });
 
   // Add command to the extension context

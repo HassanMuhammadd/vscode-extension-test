@@ -9,18 +9,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activate = void 0;
+exports.activate = exports.diagnosticCollection = void 0;
 const vscode = require("vscode");
 const HelloWorldPanel_1 = require("./panels/HelloWorldPanel");
+const fileUtils_1 = require("./utilities/fileUtils");
+exports.diagnosticCollection = vscode.languages.createDiagnosticCollection("spacingIssues");
 function activate(context) {
     // Create the show hello world command
     const showHelloWorldCommand = vscode.commands.registerCommand("hello-world.showHelloWorld", () => __awaiter(this, void 0, void 0, function* () {
-        var _a;
+        var _a, _b;
         const activeEditor = vscode.window.activeTextEditor;
         if (!activeEditor) {
             vscode.window.showErrorMessage('No active editor found.');
             return;
         }
+        HelloWorldPanel_1.HelloWorldPanel.render(context.extensionUri);
         const activeDocument = activeEditor.document;
         const folderUri = (_a = vscode.workspace.getWorkspaceFolder(activeDocument.uri)) === null || _a === void 0 ? void 0 : _a.uri;
         if (!folderUri) {
@@ -29,18 +32,16 @@ function activate(context) {
         }
         // Search for all files in the current folder
         const files = yield vscode.workspace.findFiles(new vscode.RelativePattern(folderUri, '**/*'));
-        //found all files in the project
-        files.forEach(file => {
-            console.log(`File: ${file.fsPath}`);
+        const diagnostics = [];
+        const brokenFiles = [];
+        for (const file of files) {
+            const fileErrors = yield (0, fileUtils_1.processFile)(file, diagnostics, exports.diagnosticCollection);
+            brokenFiles.push(...fileErrors);
+        }
+        (_b = HelloWorldPanel_1.HelloWorldPanel.currentPanel) === null || _b === void 0 ? void 0 : _b._postToWebview({
+            command: 'brokenFiles',
+            files: brokenFiles
         });
-        //const file = vscode.window.activeTextEditor?.document;
-        //if (file) {
-        //  for (let lineNumber = 0; lineNumber < file.lineCount; lineNumber++) {
-        //      const lineText = file.lineAt(lineNumber).text;
-        //      console.log(`Line ${lineNumber + 1}: ${lineText}`);
-        //  }
-        //}
-        HelloWorldPanel_1.HelloWorldPanel.render(context.extensionUri);
     }));
     // Add command to the extension context
     context.subscriptions.push(showHelloWorldCommand);

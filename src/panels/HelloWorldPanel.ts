@@ -1,6 +1,8 @@
 import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn } from "vscode";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
+import {fixFiles} from "../utilities/fileUtils";
+import {diagnosticCollection} from "../extension";
 
 /**
  * This class manages the state and behavior of HelloWorld webview panels.
@@ -60,6 +62,7 @@ export class HelloWorldPanel {
         {
           // Enable JavaScript in the webview
           enableScripts: true,
+          retainContextWhenHidden: true,
           // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
           localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "webview-ui/build")],
         }
@@ -125,6 +128,13 @@ export class HelloWorldPanel {
     `;
   }
 
+  public _postToWebview(message: any) {
+    this._panel.webview.postMessage({
+      command: message.command,
+      files: message.files
+    });
+  }
+
   /**
    * Sets up an event listener to listen for messages passed from the webview context and
    * executes code based on the message that is recieved.
@@ -134,14 +144,18 @@ export class HelloWorldPanel {
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      (message: any) => {
+      async(message: any) => {
         const command = message.command;
         const text = message.text;
-
+        const files = message.files;
         switch (command) {
           case "hello":
             // Code that should run in response to the hello message command
             window.showInformationMessage(text);
+            return;
+
+          case "fixFiles":
+            await fixFiles(files, diagnosticCollection);
             return;
           // Add more switch case statements here as more webview message commands
           // are created within the webview context (i.e. inside media/main.js)
